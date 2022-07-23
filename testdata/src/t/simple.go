@@ -23,6 +23,7 @@ func failStruct(kStruct, s *myStruct) {
 type myNode struct {
 	n     *myNode
 	kData int
+	kMap  map[int]int
 }
 
 func failMultiLevelNested(n, kNode *myNode) {
@@ -33,6 +34,9 @@ func failMultiLevelNested(n, kNode *myNode) {
 	kNode.n.n.kData = 3 // want "write to const variable 'kNode.n.n.kData'"
 
 	*kNode = myNode{} // want "write to const variable 'kNode'"
+
+	n.kMap[4] = 4   // want "write to const variable 'n.kMap'"
+	n.n.kMap[5] = 5 // want "write to const variable 'n.n.kMap'"
 }
 
 func failInc(kCount, count *int) {
@@ -40,4 +44,9 @@ func failInc(kCount, count *int) {
 	*kCount -= 1 // want "write to const variable 'kCount'"
 	*count--
 	*count *= 2
+}
+
+func failMatrix(kMatrix, m [][]int) {
+	m[0][0] = 0
+	kMatrix[0][0] = 0 // want "write to const variable 'kMatrix'"
 }

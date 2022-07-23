@@ -5,10 +5,10 @@ import (
 	"unicode"
 )
 
-func isConstIdent(node ast.Node) (bool, string) {
+func isConstIdent(node ast.Expr) (string, bool) {
 	ident, ok := node.(*ast.Ident)
 	if !ok {
-		return false, ""
+		return "", false
 	}
 
 	num := 0
@@ -17,38 +17,53 @@ FORLOOP:
 		switch num {
 		case 0:
 			if r != 'k' {
-				return false, ""
+				return "", false
 			}
 		case 1:
 			if unicode.IsLower(r) {
-				return false, ""
+				return "", false
 			}
 		default:
 			break FORLOOP
 		}
 		num++
 	}
-	return num > 1, ident.Name
+	return ident.Name, num > 1
 }
 
-func deref(node ast.Node) ast.Node {
-	ret := node
+func unwrap(node ast.Expr, f func(n ast.Expr) (ast.Expr, bool)) ast.Expr {
+	var (
+		ret = node
+		ok  bool
+	)
 
-	derefOnce := func(n ast.Node) (ast.Node, bool) {
-		switch v := n.(type) {
-		case *ast.StarExpr:
-			return v.X, true
-		case *ast.ParenExpr:
-			return v.X, true
-		default:
-			return nil, false
-		}
-	}
-
-	tmp, ok := derefOnce(ret)
+	ret, ok = f(ret)
 	for ok {
-		ret = tmp
-		tmp, ok = derefOnce(ret)
+		ret, ok = f(ret)
 	}
 	return ret
+}
+
+func derefAndIndex(n ast.Expr) (ast.Expr, bool) {
+	switch v := n.(type) {
+	case *ast.StarExpr:
+		return v.X, true
+	case *ast.ParenExpr:
+		return v.X, true
+	case *ast.IndexExpr:
+		return v.X, true
+	default:
+		return v, false
+	}
+}
+
+func deref(n ast.Expr) (ast.Expr, bool) {
+	switch v := n.(type) {
+	case *ast.StarExpr:
+		return v.X, true
+	case *ast.ParenExpr:
+		return v.X, true
+	default:
+		return v, false
+	}
 }

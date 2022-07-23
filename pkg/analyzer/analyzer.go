@@ -11,7 +11,7 @@ import (
 )
 
 var Analyzer = &analysis.Analyzer{
-	Name:     "k4const",
+	Name:     "k4Const",
 	Doc:      "Checks that k-started parameters should not be written.",
 	Run:      run,
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
@@ -24,44 +24,45 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	nodeFilter := []ast.Node{ // filter needed nodes: visit only them
 		(*ast.AssignStmt)(nil),
 		(*ast.IncDecStmt)(nil),
+		(*ast.CallExpr)(nil),
 	}
 
 	inspector.Preorder(nodeFilter, func(node ast.Node) {
-		switch v := node.(type) {
-		case *ast.AssignStmt:
-			for _, e := range v.Lhs {
-				err = checkWriteToConst(pass, e)
-			}
-		case *ast.IncDecStmt:
-			err = checkWriteToConst(pass, v.X)
-		}
+		checkWriteToConst(pass, node)
 	})
 	return nil, err
 }
 
-func checkWriteToConst(pass *analysis.Pass, e ast.Expr) error {
+func checkWriteToConst(pass *analysis.Pass, node ast.Node) {
+	switch v := node.(type) {
+	case *ast.AssignStmt:
+		for _, e := range v.Lhs {
+			checkWriteToOneConst(pass, e)
+		}
+	case *ast.IncDecStmt:
+		checkWriteToOneConst(pass, v.X)
+	}
+}
+
+func checkWriteToOneConst(pass *analysis.Pass, e ast.Expr) {
+	e = unwrap(e, derefAndIndex)
 	switch v := e.(type) {
-	case *ast.IndexExpr:
-		if ok, name := isConstIdent(deref(v.X)); ok {
+	case *ast.Ident:
+		if name, ok := isConstIdent(v); ok {
 			pass.Reportf(e.Pos(), "write to const variable '%s'", name)
 		}
 	case *ast.SelectorExpr:
-		if ok, _ := isConstIdent(v.Sel); ok {
+		if _, ok := isConstIdent(v.Sel); ok {
 			var b strings.Builder
 			err := printer.Fprint(&b, pass.Fset, v)
 			if err != nil {
-				return err
+				pass.Reportf(e.Pos(), "failed to get SelectorExpr name: %v", err)
+				return
 			}
 			pass.Reportf(e.Pos(), "write to const variable '%s'", b.String())
-			return nil
 		}
-		if ok, name := isConstIdent(deref(v.X)); ok {
-			pass.Reportf(e.Pos(), "write to const variable '%s'", name)
-		}
-	case *ast.StarExpr:
-		if ok, name := isConstIdent(deref(v.X)); ok {
+		if name, ok := isConstIdent(unwrap(v.X, deref)); ok {
 			pass.Reportf(e.Pos(), "write to const variable '%s'", name)
 		}
 	}
-	return nil
 }

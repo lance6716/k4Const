@@ -1,8 +1,8 @@
-package k4const
+package main
 
 import (
+	"github.com/lance6716/k4Const/pkg/analyzer"
 	"golang.org/x/tools/go/analysis/singlechecker"
-	"k4Const/pkg/analyzer"
 )
 
 func main() {

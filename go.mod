@@ -1,4 +1,4 @@
-module k4Const
+module github.com/lance6716/k4Const
 
 go 1.18
 
