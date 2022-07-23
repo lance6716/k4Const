@@ -11,7 +11,7 @@ import (
 )
 
 var Analyzer = &analysis.Analyzer{
-	Name:     "k4Const",
+	Name:     "k4const",
 	Doc:      "Checks that k-started parameters should not be written.",
 	Run:      run,
 	Requires: []*analysis.Analyzer{inspect.Analyzer},

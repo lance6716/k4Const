@@ -2,7 +2,14 @@
 
 ## Example
 
-TBD
+```bash
+go install github.com/lance6716/k4Const/cmd/k4const@latest
+go vet -vettool=$(which k4const) ./...
+```
+
+## Supported pattern
+
+See [test](https://github.com/lance6716/k4Const/blob/main/testdata/src/t/simple.go)
 
 ## Rationale
 
